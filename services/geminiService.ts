@@ -1,22 +1,26 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { AI_PERSONA } from '../constants';
 
 // Safely access process.env.API_KEY to prevent ReferenceError in browser environments
 const getApiKey = () => {
   try {
-    if (typeof process !== 'undefined' && process.env) {
-      return process.env.API_KEY;
+    // Check global scope specifically for process
+    if (typeof process !== 'undefined' && process && process.env) {
+      return process.env.API_KEY || '';
+    }
+    // Check window.process for polyfilled env
+    if (typeof window !== 'undefined' && (window as any).process && (window as any).process.env) {
+        return (window as any).process.env.API_KEY || '';
     }
   } catch (e) {
-    // Ignore error if process is not defined
+    // Ignore any access errors
   }
   return '';
 };
 
 const apiKey = getApiKey();
-// Only initialize if key exists to avoid immediate errors
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+// Only initialize if key exists and is a non-empty string
+const ai = apiKey && apiKey.length > 0 ? new GoogleGenAI({ apiKey }) : null;
 
 // Local fallback comments to use when API quota is exceeded or offline
 const getFallbackComment = (score: number): string => {
@@ -49,7 +53,7 @@ const getFallbackComment = (score: number): string => {
 
 export const getGameComment = async (score: number, deathReason: string): Promise<string> => {
   if (!ai) {
-    // console.warn("API Key missing, using fallback.");
+    // Fail silently to fallback
     return getFallbackComment(score);
   }
 
@@ -74,9 +78,6 @@ export const getGameComment = async (score: number, deathReason: string): Promis
 
     return response.text || getFallbackComment(score);
   } catch (error: any) {
-    // Log error but don't crash the UI
-    // console.error("Gemini API Error:", error);
-    
     // Check for quota exceeded (429) or other common errors
     if (error.status === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
         console.warn("Quota exceeded, switching to local commentary.");
