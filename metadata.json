@@ -1,0 +1,5 @@
+{
+  "name": "像素几何冲刺 (Pixel Geometry Dash)",
+  "description": "一款快节奏的像素风横版闯关游戏。包含加速、冲刺、护盾等多种道具，具备本地排行榜与AI游戏教练功能。",
+  "requestFramePermissions": []
+}
